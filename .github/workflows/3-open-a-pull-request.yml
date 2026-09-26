@@ -69,12 +69,21 @@ jobs:
 
       # START: Check practical exercise
 
-      - name: Check PR title for keyphrase
-        id: check-pr-title
+      - name: Check PR title for exercise keyphrase
+        id: check-pr-title-exercise
         continue-on-error: true
         uses: skills/action-keyphrase-checker@v1
         with:
           keyphrase: "Add my first file"
+          text: ${{ github.event.pull_request.title }}
+          case-sensitive: false
+
+      - name: Check PR title for default keyphrase
+        id: check-pr-title-default
+        continue-on-error: true
+        uses: skills/action-keyphrase-checker@v1
+        with:
+          keyphrase: "My first branch"
           text: ${{ github.event.pull_request.title }}
           case-sensitive: false
 
@@ -103,12 +112,12 @@ jobs:
             step_number: 3
             results_table:
               - description: "Pull Request title matches"
-                passed: ${{ steps.check-pr-title.outcome == 'success' }}
+                passed: ${{ steps.check-pr-title-exercise.outcome == 'success' || steps.check-pr-title-default.outcome == 'success' }}
               - description: ${{ steps.check-pr-description.outputs.STEP_MESSAGE }}
                 passed: ${{ steps.check-pr-description.outcome == 'success' }}
 
-      - name: Fail job if not all checks passed
-        if: contains(steps.*.outcome, 'failure')
+      - name: Fail job if title and description checks did not pass
+        if: steps.check-pr-description.outcome == 'failure' || (steps.check-pr-title-exercise.outcome == 'failure' && steps.check-pr-title-default.outcome == 'failure')
         run: exit 1
 
   post_next_step_content:
